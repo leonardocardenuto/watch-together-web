@@ -76,9 +76,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ roomId, videoPath }) => {
     }
     const currentTime = playerRef.current?.getCurrentTime() || 0;
 
-    // Only emit play event if not already playing
     if (isPlaying) {
-      return; // Do nothing if already playing
+      return; 
     }
 
     console.log(`Emitting play event: roomId=${roomId}, currentTime=${currentTime}`);

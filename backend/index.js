@@ -31,6 +31,10 @@ const rooms = {};
 
 app.use('/uploads', express.static('uploads'));
 
+app.get('/', (req, res) => {
+  res.status(200).send('Welcome to the Video Sync Server!');
+});
+
 app.post('/upload', upload.single('video'), (req, res) => {
   const videoPath = `/uploads/${req.file.filename}`;
   const { roomId } = req.body;
