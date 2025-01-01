@@ -12,8 +12,6 @@ const Home: React.FC = () => {
   const [inputRoomId, setInputRoomId] = useState<string>(''); 
   const [videoUploaded, setVideoUploaded] = useState<boolean>(false);
 
-  const [isInRoom, setIsInRoom] = useState<boolean>(false);
-
   const handleCreateRoom = async () => {
     const res = await fetch(`${API_DOMAIN}/create-room`, { method: 'POST' });
     const data = await res.json();
