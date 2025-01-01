@@ -103,12 +103,6 @@ const Home: React.FC = () => {
 
       <div>
         <input type="file" accept="video/*" onChange={handleVideoUpload} />
-        {videoUploaded && (
-          <p>
-            Video uploaded: {videoPath.split('/').pop()}
-            <button onClick={() => setVideoUploaded(false)}>Replace Video</button>
-          </p>
-        )}
       </div>
 
       {videoPath && <VideoPlayer roomId={roomId} videoPath={videoPath} />}
