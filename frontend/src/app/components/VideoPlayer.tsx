@@ -18,14 +18,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ roomId, videoPath }) => {
   useEffect(() => {
     console.log(`Joining room: ${roomId}`);
     socket.emit('join-room', { roomId });
-
+  
     socket.on('sync', ({ currentTime, isPlaying, videoPath }) => {
       console.log(`Received sync event: currentTime=${currentTime}, isPlaying=${isPlaying}, videoPath=${videoPath}`);
       setCurrentTime(currentTime);
       setIsPlaying(isPlaying);
       playerRef.current?.seekTo(currentTime);
+  
+      if (!isPlaying) {
+        playerRef.current?.seekTo(currentTime);
+      }
     });
-
+  
     socket.on('play', ({ currentTime }) => {
       console.log(`Received play event: currentTime=${currentTime}`);
       if (lastEventSource.current === 'remote') {
@@ -37,7 +41,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ roomId, videoPath }) => {
       setCurrentTime(currentTime);
       playerRef.current?.seekTo(currentTime);
     });
-
+  
     socket.on('pause', ({ currentTime }) => {
       console.log(`Received pause event: currentTime=${currentTime}`);
       if (lastEventSource.current === 'remote') {
@@ -46,10 +50,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ roomId, videoPath }) => {
       }
       lastEventSource.current = 'remote';
       setIsPlaying(false);
-      setCurrentTime(currentTime);
-      playerRef.current?.seekTo(currentTime);
+      if (currentTime) {
+        setCurrentTime(currentTime);
+        playerRef.current?.seekTo(currentTime);
+      }
     });
-
+  
     socket.on('seek', ({ currentTime }) => {
       console.log(`Received seek event: currentTime=${currentTime}`);
       if (lastEventSource.current === 'remote') {
@@ -60,7 +66,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ roomId, videoPath }) => {
       setCurrentTime(currentTime);
       playerRef.current?.seekTo(currentTime);
     });
-
+  
     return () => {
       socket.off('sync');
       socket.off('play');
@@ -68,6 +74,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ roomId, videoPath }) => {
       socket.off('seek');
     };
   }, [roomId]);
+  
 
   const handlePlay = () => {
     if (lastEventSource.current === 'remote') {
@@ -75,15 +82,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ roomId, videoPath }) => {
       return;
     }
     const currentTime = playerRef.current?.getCurrentTime() || 0;
-
+  
     if (isPlaying) {
       return; 
     }
-
+  
     console.log(`Emitting play event: roomId=${roomId}, currentTime=${currentTime}`);
     setIsPlaying(true);
     socket.emit('play', { roomId, currentTime });
   };
+  
 
   const handlePause = () => {
     if (lastEventSource.current === 'remote') {

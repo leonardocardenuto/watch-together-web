@@ -64,26 +64,32 @@ io.on('connection', (socket) => {
 
   socket.on('join-room', ({ roomId }) => {
     console.log(`User ${socket.id} is joining room: ${roomId}`);
-
+  
     if (!rooms[roomId]) {
       console.log(`Room ${roomId} doesn't exist`);
       return;
     }
-
+  
     rooms[roomId].clients.push(socket.id);
     socket.join(roomId);
-
+  
     const room = rooms[roomId];
     console.log(`Syncing room: ${roomId} with currentTime: ${room.currentTime}, isPlaying: ${room.isPlaying}`);
-
+  
     socket.emit('sync', {
       currentTime: room.currentTime,
       isPlaying: room.isPlaying,
       videoPath: room.videoPath,
     });
-
+  
+    if (room.isPlaying) {
+      io.to(roomId).emit('pause', { currentTime: null });
+      room.isPlaying = false; 
+    }
+  
     socket.to(roomId).emit('new-user', { socketId: socket.id });
   });
+  
 
   socket.on('video-uploaded', ({ roomId, videoPath }) => {
     console.log(`Video uploaded for room: ${roomId}`);

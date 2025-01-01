@@ -11,7 +11,6 @@ const Home: React.FC = () => {
   const [videoPath, setVideoPath] = useState<string>('');
   const [inputRoomId, setInputRoomId] = useState<string>('');
   const [videoUploaded, setVideoUploaded] = useState<boolean>(false);
-  const [isInRoom, setIsInRoom] = useState<boolean>(false); // This state seems unnecessary as roomId can determine the room state.
 
   const handleCreateRoom = async () => {
     const res = await fetch(`${API_DOMAIN}/create-room`, { method: 'POST' });
@@ -75,37 +74,46 @@ const Home: React.FC = () => {
   }, []);
 
   return (
-    <div>
-      <h1>Video Sync App</h1>
+    <div className="container">
+      <h1 className="title">Watch 2gether</h1>
 
-      {/* Room Creation or Join */}
       {!roomId ? (
-        <div>
-          <button onClick={handleCreateRoom}>Create Room</button>
-
-          {/* Join Room Section */}
-          <div>
+        <div className="card">
+          <button className="btn" onClick={handleCreateRoom}>Create Room</button>
+          <div className="mt-6">
             <input
               type="text"
               placeholder="Enter Room ID"
               value={inputRoomId}
               onChange={(e) => setInputRoomId(e.target.value)}
+              className="input text-black w-full"
             />
-            <button onClick={handleJoinRoom}>Join Room</button>
+            <button className="btn mt-4 w-full" onClick={handleJoinRoom}>Join Room</button>
           </div>
         </div>
       ) : (
-        <div>
-          <p>Room ID: {roomId}</p>
-          <button onClick={handleLeaveRoom}>Leave Room</button>
+        <div className="card">
+          <p className="text-black text-center text-xl font-medium mb-4">Room ID: {roomId}</p>
+          <button className="btn-secondary w-full" onClick={handleLeaveRoom}>Leave Room</button>
         </div>
       )}
 
-      <div>
-        <input type="file" accept="video/*" onChange={handleVideoUpload} />
-      </div>
+      {roomId && (
+        <div className="mt-6">
+          <input
+            type="file"
+            accept="video/*"
+            onChange={handleVideoUpload}
+            className="input w-full"
+          />
+        </div>
+      )}
 
-      {videoPath && <VideoPlayer roomId={roomId} videoPath={videoPath} />}
+      {videoPath && (
+        <div className="video-container">
+          <VideoPlayer roomId={roomId} videoPath={videoPath} />
+        </div>
+      )}
     </div>
   );
 };
