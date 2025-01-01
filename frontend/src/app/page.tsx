@@ -9,14 +9,14 @@ const socket = io(API_DOMAIN);
 const Home: React.FC = () => {
   const [roomId, setRoomId] = useState<string>('');
   const [videoPath, setVideoPath] = useState<string>('');
-  const [inputRoomId, setInputRoomId] = useState<string>(''); 
+  const [inputRoomId, setInputRoomId] = useState<string>('');
   const [videoUploaded, setVideoUploaded] = useState<boolean>(false);
+  const [isInRoom, setIsInRoom] = useState<boolean>(false); // This state seems unnecessary as roomId can determine the room state.
 
   const handleCreateRoom = async () => {
     const res = await fetch(`${API_DOMAIN}/create-room`, { method: 'POST' });
     const data = await res.json();
     setRoomId(data.roomId);
-    setIsInRoom(true);
   };
 
   const handleJoinRoom = async () => {
@@ -27,10 +27,8 @@ const Home: React.FC = () => {
 
     socket.emit('join-room', { roomId: inputRoomId });
     setRoomId(inputRoomId);
-    setIsInRoom(true);
   };
 
-  // Handle video upload
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
 
@@ -53,17 +51,16 @@ const Home: React.FC = () => {
     socket.emit('leave-room', { roomId });
     setRoomId('');
     setVideoPath('');
-    setIsInRoom(false);
   };
 
   useEffect(() => {
     socket.on('sync', ({ currentTime, isPlaying, videoPath }: { currentTime: number; isPlaying: boolean; videoPath: string }) => {
-      setVideoPath(videoPath); 
+      setVideoPath(videoPath);
     });
 
     socket.on('video-updated', ({ videoPath }: { videoPath: string }) => {
       console.log('Received video-updated event: new videoPath=', videoPath);
-      setVideoPath(videoPath); 
+      setVideoPath(videoPath);
     });
 
     socket.on('user-left', ({ socketId }) => {
