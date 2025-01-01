@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import VideoPlayer from '@/app/components/VideoPlayer';
 import io from 'socket.io-client';
 
-const socket = io('http://localhost:3001');
+const API_DOMAIN = process.env.NEXT_PUBLIC_API_DOMAIN;
+const socket = io(API_DOMAIN);
 
 const Home: React.FC = () => {
   const [roomId, setRoomId] = useState<string>('');
@@ -14,7 +15,7 @@ const Home: React.FC = () => {
   const [isInRoom, setIsInRoom] = useState<boolean>(false);
 
   const handleCreateRoom = async () => {
-    const res = await fetch('http://localhost:3001/create-room', { method: 'POST' });
+    const res = await fetch(`${API_DOMAIN}/create-room`, { method: 'POST' });
     const data = await res.json();
     setRoomId(data.roomId);
     setIsInRoom(true);
@@ -39,7 +40,7 @@ const Home: React.FC = () => {
     formData.append('video', e.target.files[0]);
     formData.append('roomId', roomId);
 
-    const res = await fetch('http://localhost:3001/upload', {
+    const res = await fetch(`${API_DOMAIN}/upload`, {
       method: 'POST',
       body: formData,
     });
@@ -47,11 +48,9 @@ const Home: React.FC = () => {
     setVideoPath(data.videoPath);
     setVideoUploaded(true);
 
-    // Notify the server about the uploaded video
     socket.emit('video-uploaded', { roomId, videoPath: data.videoPath });
   };
 
-  // Handle leaving the room
   const handleLeaveRoom = () => {
     socket.emit('leave-room', { roomId });
     setRoomId('');
@@ -103,12 +102,10 @@ const Home: React.FC = () => {
       ) : (
         <div>
           <p>Room ID: {roomId}</p>
-          {/* Add Leave Room button */}
           <button onClick={handleLeaveRoom}>Leave Room</button>
         </div>
       )}
 
-      {/* Video Upload */}
       <div>
         <input type="file" accept="video/*" onChange={handleVideoUpload} />
         {videoUploaded && (

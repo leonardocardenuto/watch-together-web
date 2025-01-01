@@ -6,8 +6,8 @@ interface VideoPlayerProps {
   roomId: string;
   videoPath: string;
 }
-
-const socket: Socket = io('http://localhost:3001');
+const API_DOMAIN = process.env.NEXT_PUBLIC_API_DOMAIN;
+const socket: Socket =  io(API_DOMAIN);
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ roomId, videoPath }) => {
   const playerRef = useRef<ReactPlayer>(null);
@@ -93,9 +93,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ roomId, videoPath }) => {
     }
     const currentTime = playerRef.current?.getCurrentTime() || 0;
 
-    // Only emit pause event if not already paused
     if (!isPlaying) {
-      return; // Do nothing if already paused
+      return; 
     }
 
     console.log(`Emitting pause event: roomId=${roomId}, currentTime=${currentTime}`);
@@ -120,7 +119,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ roomId, videoPath }) => {
     <div>
       <ReactPlayer
         ref={playerRef}
-        url={`http://localhost:3001${videoPath}`}
+        url={`${API_DOMAIN}${videoPath}`}
         playing={isPlaying}
         controls
         onPlay={handlePlay}
