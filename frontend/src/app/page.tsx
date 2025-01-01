@@ -74,43 +74,45 @@ const Home: React.FC = () => {
   }, []);
 
   return (
-    <div className="container">
-      <h1 className="title">Watch 2gether</h1>
+    <div className="relative container">
+      <h1 className="absolute top-4 left-4 text-white text-2xl font-bold z-10">Watch 2gether</h1>
 
-      {!roomId ? (
-        <div className="card">
-          <button className="btn" onClick={handleCreateRoom}>Create Room</button>
-          <div className="mt-6">
-            <input
-              type="text"
-              placeholder="Enter Room ID"
-              value={inputRoomId}
-              onChange={(e) => setInputRoomId(e.target.value)}
-              className="input text-black w-full"
-            />
-            <button className="btn mt-4 w-full" onClick={handleJoinRoom}>Join Room</button>
+      <div className="flex justify-center items-center mt-20">
+        {!roomId ? (
+          <div className="card w-full max-w-xl p-6">
+            <button className="btn w-full" onClick={handleCreateRoom}>Create Room</button>
+            <div className="mt-6">
+              <input
+                type="text"
+                placeholder="Enter Room ID"
+                value={inputRoomId}
+                onChange={(e) => setInputRoomId(e.target.value)}
+                className="input text-black w-full"
+              />
+              <button className="btn mt-4 w-full" onClick={handleJoinRoom}>Join Room</button>
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="card">
-          <p className="text-black text-center text-xl font-medium mb-4">Room ID: {roomId}</p>
-          <button className="btn-secondary w-full" onClick={handleLeaveRoom}>Leave Room</button>
-        </div>
-      )}
+        ) : (
+          <div className="absolute top-4 right-4 text-white text-xl z-10">
+            <p className="mb-2">Room ID: {roomId}</p>
+            <button className="btn-secondary" onClick={handleLeaveRoom}>Leave Room</button>
+          </div>
+        )}
+      </div>
 
       {roomId && (
-        <div className="mt-6">
+        <div className="mt-6 mb-4 flex justify-center">
           <input
             type="file"
             accept="video/*"
             onChange={handleVideoUpload}
-            className="input w-full"
+            className="input w-full max-w-md"
           />
         </div>
       )}
 
       {videoPath && (
-        <div className="video-container">
+        <div className="video-container mt-4">
           <VideoPlayer roomId={roomId} videoPath={videoPath} />
         </div>
       )}

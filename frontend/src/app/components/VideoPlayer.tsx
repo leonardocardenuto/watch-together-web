@@ -6,8 +6,9 @@ interface VideoPlayerProps {
   roomId: string;
   videoPath: string;
 }
+
 const API_DOMAIN = process.env.NEXT_PUBLIC_API_DOMAIN;
-const socket: Socket =  io(API_DOMAIN);
+const socket: Socket = io(API_DOMAIN);
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ roomId, videoPath }) => {
   const playerRef = useRef<ReactPlayer>(null);
@@ -18,20 +19,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ roomId, videoPath }) => {
   useEffect(() => {
     console.log(`Joining room: ${roomId}`);
     socket.emit('join-room', { roomId });
-  
+
     socket.on('sync', ({ currentTime, isPlaying, videoPath }) => {
-      console.log(`Received sync event: currentTime=${currentTime}, isPlaying=${isPlaying}, videoPath=${videoPath}`);
       setCurrentTime(currentTime);
       setIsPlaying(isPlaying);
       playerRef.current?.seekTo(currentTime);
-  
+
       if (!isPlaying) {
         playerRef.current?.seekTo(currentTime);
       }
     });
-  
+
     socket.on('play', ({ currentTime }) => {
-      console.log(`Received play event: currentTime=${currentTime}`);
       if (lastEventSource.current === 'remote') {
         lastEventSource.current = null;
         return;
@@ -41,9 +40,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ roomId, videoPath }) => {
       setCurrentTime(currentTime);
       playerRef.current?.seekTo(currentTime);
     });
-  
+
     socket.on('pause', ({ currentTime }) => {
-      console.log(`Received pause event: currentTime=${currentTime}`);
       if (lastEventSource.current === 'remote') {
         lastEventSource.current = null;
         return;
@@ -55,9 +53,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ roomId, videoPath }) => {
         playerRef.current?.seekTo(currentTime);
       }
     });
-  
+
     socket.on('seek', ({ currentTime }) => {
-      console.log(`Received seek event: currentTime=${currentTime}`);
       if (lastEventSource.current === 'remote') {
         lastEventSource.current = null;
         return;
@@ -66,7 +63,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ roomId, videoPath }) => {
       setCurrentTime(currentTime);
       playerRef.current?.seekTo(currentTime);
     });
-  
+
     return () => {
       socket.off('sync');
       socket.off('play');
@@ -74,7 +71,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ roomId, videoPath }) => {
       socket.off('seek');
     };
   }, [roomId]);
-  
 
   const handlePlay = () => {
     if (lastEventSource.current === 'remote') {
@@ -82,16 +78,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ roomId, videoPath }) => {
       return;
     }
     const currentTime = playerRef.current?.getCurrentTime() || 0;
-  
+
     if (isPlaying) {
-      return; 
+      return;
     }
-  
-    console.log(`Emitting play event: roomId=${roomId}, currentTime=${currentTime}`);
+
     setIsPlaying(true);
     socket.emit('play', { roomId, currentTime });
   };
-  
 
   const handlePause = () => {
     if (lastEventSource.current === 'remote') {
@@ -101,10 +95,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ roomId, videoPath }) => {
     const currentTime = playerRef.current?.getCurrentTime() || 0;
 
     if (!isPlaying) {
-      return; 
+      return;
     }
 
-    console.log(`Emitting pause event: roomId=${roomId}, currentTime=${currentTime}`);
     setIsPlaying(false);
     socket.emit('pause', { roomId, currentTime });
   };
@@ -117,13 +110,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ roomId, videoPath }) => {
 
     if (Math.abs(time - currentTime) < 0.5) return;
 
-    console.log(`Emitting seek event: roomId=${roomId}, currentTime=${time}`);
     setCurrentTime(time);
     socket.emit('seek', { roomId, currentTime: time });
   };
 
   return (
-    <div>
+    <div className="player-container">
       <ReactPlayer
         ref={playerRef}
         url={`${API_DOMAIN}${videoPath}`}
@@ -133,6 +125,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ roomId, videoPath }) => {
         onPause={handlePause}
         onSeek={handleSeek}
         progressInterval={1000}
+        width="100%"
+        height="100%"
       />
     </div>
   );
