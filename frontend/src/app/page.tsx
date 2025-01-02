@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import React, { useState, useEffect } from 'react';
 import VideoPlayer from '@/app/components/VideoPlayer';
 import io from 'socket.io-client';
@@ -11,11 +11,14 @@ const Home: React.FC = () => {
   const [videoPath, setVideoPath] = useState<string>('');
   const [inputRoomId, setInputRoomId] = useState<string>('');
   const [videoUploaded, setVideoUploaded] = useState<boolean>(false);
+  const [isRoomCreator, setIsRoomCreator] = useState<boolean>(false);
+  const [isSynced, setIsSynced] = useState<boolean>(false); 
 
   const handleCreateRoom = async () => {
     const res = await fetch(`${API_DOMAIN}/create-room`, { method: 'POST' });
     const data = await res.json();
     setRoomId(data.roomId);
+    setIsRoomCreator(true); 
   };
 
   const handleJoinRoom = async () => {
@@ -24,8 +27,9 @@ const Home: React.FC = () => {
       return;
     }
 
-    socket.emit('join-room', { roomId: inputRoomId });
+    socket.emit('join-room', { roomId: inputRoomId, isRoomCreator: false });
     setRoomId(inputRoomId);
+    setIsRoomCreator(false); 
   };
 
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -50,6 +54,8 @@ const Home: React.FC = () => {
     socket.emit('leave-room', { roomId });
     setRoomId('');
     setVideoPath('');
+    setIsRoomCreator(false);
+    setIsSynced(false);
   };
 
   useEffect(() => {
@@ -66,10 +72,22 @@ const Home: React.FC = () => {
       console.log(`User ${socketId} has left the room`);
     });
 
+    socket.on('sync-complete', () => {
+      setIsSynced(true); 
+    });
+
+    socket.on('new-user-joined', ({ isRoomCreator }: { isRoomCreator: boolean }) => {
+      if (!isRoomCreator) {
+        alert('A new user has joined the room!');
+      }
+    });
+
     return () => {
       socket.off('sync');
       socket.off('video-updated');
       socket.off('user-left');
+      socket.off('sync-complete');
+      socket.off('new-user-joined');
     };
   }, []);
 
@@ -100,7 +118,7 @@ const Home: React.FC = () => {
         )}
       </div>
 
-      {roomId && (
+      {(roomId && isRoomCreator) || (roomId && isSynced) ? (
         <div className="mt-6 mb-4 flex justify-center">
           <input
             type="file"
@@ -109,11 +127,11 @@ const Home: React.FC = () => {
             className="input w-full max-w-md"
           />
         </div>
-      )}
+      ) : null}
 
       {videoPath && (
         <div className="video-container mt-4">
-          <VideoPlayer roomId={roomId} videoPath={videoPath} />
+          <VideoPlayer roomId={roomId} videoPath={videoPath} isRoomCreator={isRoomCreator} />
         </div>
       )}
     </div>

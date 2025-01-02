@@ -39,9 +39,6 @@ app.post('/upload', upload.single('video'), (req, res) => {
   const videoPath = `/uploads/${req.file.filename}`;
   const { roomId } = req.body;
 
-  console.log(`Video uploaded for room: ${roomId}`);
-  console.log(`Video path: ${videoPath}`);
-
   if (roomId && rooms[roomId]) {
     rooms[roomId].videoPath = videoPath;
     io.to(roomId).emit('video-updated', { videoPath });
@@ -54,27 +51,23 @@ app.post('/create-room', (req, res) => {
   const roomId = Math.random().toString(36).substring(2, 8);
   rooms[roomId] = { clients: [], currentTime: 0, isPlaying: false, videoPath: '' };
 
-  console.log(`Room created: ${roomId}`);
-
   res.status(200).json({ roomId });
 });
 
 io.on('connection', (socket) => {
-  console.log('A user connected');
-
-  socket.on('join-room', ({ roomId }) => {
-    console.log(`User ${socket.id} is joining room: ${roomId}`);
-  
+  socket.on('join-room', ({ roomId, isRoomCreator }) => {
     if (!rooms[roomId]) {
-      console.log(`Room ${roomId} doesn't exist`);
       return;
     }
   
-    rooms[roomId].clients.push(socket.id);
-    socket.join(roomId);
-  
     const room = rooms[roomId];
-    console.log(`Syncing room: ${roomId} with currentTime: ${room.currentTime}, isPlaying: ${room.isPlaying}`);
+  
+    if (isRoomCreator && room.clients.length === 0) {
+      room.creator = socket.id;
+    }
+  
+    room.clients.push(socket.id);
+    socket.join(roomId);
   
     socket.emit('sync', {
       currentTime: room.currentTime,
@@ -84,25 +77,24 @@ io.on('connection', (socket) => {
   
     if (room.isPlaying) {
       io.to(roomId).emit('pause', { currentTime: null });
-      room.isPlaying = false; 
+      room.isPlaying = false;
+    }
+  
+    if (room.creator && room.creator !== socket.id) {
+      io.to(room.creator).emit('new-user-joined', { isRoomCreator: false });
     }
   
     socket.to(roomId).emit('new-user', { socketId: socket.id });
   });
-  
 
   socket.on('video-uploaded', ({ roomId, videoPath }) => {
-    console.log(`Video uploaded for room: ${roomId}`);
     if (!rooms[roomId]) return;
 
     rooms[roomId].videoPath = videoPath;
-
     io.to(roomId).emit('video-updated', { videoPath });
   });
 
   socket.on('play', ({ roomId, currentTime }) => {
-    console.log(`Play event received for room: ${roomId} at time: ${currentTime}`);
-
     const room = rooms[roomId];
     if (!room) return;
 
@@ -113,8 +105,6 @@ io.on('connection', (socket) => {
   });
 
   socket.on('pause', ({ roomId, currentTime }) => {
-    console.log(`Pause event received for room: ${roomId} at time: ${currentTime}`);
-
     const room = rooms[roomId];
     if (!room) return;
 
@@ -125,8 +115,6 @@ io.on('connection', (socket) => {
   });
 
   socket.on('seek', ({ roomId, currentTime }) => {
-    console.log(`Seek event received for room: ${roomId} to time: ${currentTime}`);
-
     const room = rooms[roomId];
     if (!room) return;
 
@@ -135,40 +123,42 @@ io.on('connection', (socket) => {
     socket.broadcast.to(roomId).emit('seek', { currentTime });
   });
 
-  socket.on('disconnect', () => {
-    console.log(`User ${socket.id} disconnected`);
+  socket.on('sync-complete', ({ roomId, currentTime, isPlaying }) => {
+    const room = rooms[roomId];
+    if (!room) return;
 
+    room.currentTime = currentTime;
+    room.isPlaying = isPlaying;
+
+    io.to(roomId).emit('sync-complete');
+  });
+
+  socket.on('disconnect', () => {
     for (const roomId in rooms) {
       const room = rooms[roomId];
       const index = room.clients.indexOf(socket.id);
       if (index > -1) {
         room.clients.splice(index, 1);  
-        console.log(`User ${socket.id} removed from room: ${roomId}`);
       }
     }
   });
 
-socket.on('leave-room', ({ roomId }) => {
-  console.log(`User ${socket.id} is leaving room: ${roomId}`);
+  socket.on('leave-room', ({ roomId }) => {
+    if (!rooms[roomId]) return;
 
-  if (!rooms[roomId]) return;
+    const index = rooms[roomId].clients.indexOf(socket.id);
+    if (index > -1) {
+      rooms[roomId].clients.splice(index, 1);
+    }
 
-  const index = rooms[roomId].clients.indexOf(socket.id);
-  if (index > -1) {
-    rooms[roomId].clients.splice(index, 1);
-    console.log(`User ${socket.id} removed from room: ${roomId}`);
-  }
+    socket.to(roomId).emit('user-left', { socketId: socket.id });
 
-  socket.to(roomId).emit('user-left', { socketId: socket.id });
+    if (rooms[roomId].clients.length === 0) {
+      delete rooms[roomId];
+    }
 
-  if (rooms[roomId].clients.length === 0) {
-    delete rooms[roomId];
-    console.log(`Room ${roomId} deleted because it is empty`);
-  }
-
-  socket.leave(roomId);
-});
-
+    socket.leave(roomId);
+  });
 });
 
 server.listen(PORT, () => {
