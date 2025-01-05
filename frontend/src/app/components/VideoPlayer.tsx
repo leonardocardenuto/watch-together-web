@@ -23,6 +23,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ roomId, videoPath, isRoomCrea
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSyncButton, setShowSyncButton] = useState(false);
+  const [disableControls, setDisableControls] = useState(false);
+
   const [isSynced, setIsSynced] = useState(false);
 
   useEffect(() => {
@@ -60,7 +62,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ roomId, videoPath, isRoomCrea
 
     socket.on('new-user-joined', ({ isRoomCreator: isNewUserCreator }) => {
       if (!isNewUserCreator) {
-        setShowSyncButton(true);
+        setDisableControls(true);
+        setTimeout(() => {
+          setShowSyncButton(true); 
+        }, 2000);
       }
     });
 
@@ -79,7 +84,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ roomId, videoPath, isRoomCrea
   }, [roomId, isRoomCreator]);
 
   const handlePlayPause = () => {
-    if (showSyncButton) return; // Prevent play/pause when sync is pending
+    if (showSyncButton) return;
 
     const currentTime = playerRef.current?.getCurrentTime() || 0;
     if (isPlaying) {
@@ -97,13 +102,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ roomId, videoPath, isRoomCrea
     setIsPlaying(false);
     socket.emit('pause', { roomId, currentTime });
     lastEventSource.current = 'local';
+    setDisableControls(false);
     setShowSyncButton(false);
     socket.emit('sync-complete', { roomId, currentTime, isPlaying: false });
   };
 
   const handleSeek = (time: number) => {
-    if (showSyncButton) return; // Prevent seeking when sync is pending
-
+    if (showSyncButton) return;
     setCurrentTime(time);
     playerRef.current?.seekTo(time);
     socket.emit('seek', { roomId, currentTime: time });
@@ -175,7 +180,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ roomId, videoPath, isRoomCrea
         <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-70 p-4 flex items-center gap-4">
           <button
             onClick={handlePlayPause}
-            disabled={showSyncButton} // Disable play/pause when sync button is visible
+            disabled={disableControls}
             className="px-4 py-2 text-white rounded shadow"
           >
             {isPlaying ? <FaPause /> : <FaPlay />}
@@ -188,7 +193,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ roomId, videoPath, isRoomCrea
             step="0.1"
             value={currentTime || 0}
             onChange={(e) => handleSeek(parseFloat(e.target.value))}
-            disabled={showSyncButton} // Disable seek when sync button is visible
+            disabled={disableControls} 
             className="flex-1"
           />
           <span className="text-white">{formatTime(duration)}</span>
@@ -212,7 +217,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ roomId, videoPath, isRoomCrea
         </div>
       )}
 
-      {!isSynced && !isRoomCreator && (<p> Awaiting owner sync ... </p>)}
+      {!isSynced && !isRoomCreator && (<p> Awaiting owner to sync ... </p>)}
     </div>
   );
 };
